@@ -1,0 +1,11 @@
+name = "everday-app"
+main = "worker.js"
+compatibility_date = "2026-06-30"
+
+[assets]
+directory = "."
+binding = "ASSETS"
+
+[[kv_namespaces]]
+binding = "EVERYDAY_KV"
+id = "766696cd5c4147d7a67cdf4c789857ae"
