@@ -1,11 +1,12 @@
-name = "everday-app"
+name = "everyday-api"
 main = "worker.js"
-compatibility_date = "2026-06-30"
+compatibility_date = "2024-01-01"
 
-[assets]
-directory = "."
-binding = "ASSETS"
-
+# KV Namespace - erstelle mit: wrangler kv namespace create EVERYDAY
 [[kv_namespaces]]
-binding = "EVERYDAY_KV"
-id = "766696cd5c4147d7a67cdf4c789857ae"
+binding = "EVERYDAY"
+id = "DEINE_KV_NAMESPACE_ID_HIER"  # ← ersetze mit deiner echten ID
+
+# Secret für Token-Signierung - setze mit:
+# wrangler secret put TOKEN_SECRET
+# (dann einen langen zufälligen String eingeben)
