@@ -54,7 +54,8 @@
 (function(){
   // Skip lockscreen if already logged in
   if(localStorage.getItem("lg_auth_token")){
-    document.getElementById("lockscreen").style.display="none";
+    var lsEl=document.getElementById("lockscreen");
+    if(lsEl)lsEl.parentNode.removeChild(lsEl);
     return;
   }
   // Lock date
@@ -145,8 +146,9 @@
   function authDone(token,user){
     try{localStorage.setItem("lg_auth_token",token);localStorage.setItem("lg_user",JSON.stringify(user));}catch(e){}
     var o=document.getElementById("authOverlay");
-    o.style.opacity="0";o.style.transform="translateY(-30px)";
-    setTimeout(function(){o.style.display="none";},400);
+    if(o)o.parentNode.removeChild(o);
+    var ls=document.getElementById("lockscreen");
+    if(ls)ls.parentNode.removeChild(ls);
   }
   // check existing session
   try{
