@@ -3887,13 +3887,17 @@ let cloudSyncOK = false;
 let cloudSyncTimer = null;
 let lastCloudPushAt = null;
 const DEV_ACCOUNT = "luka.gc@icloud.com";
-const APP_VERSION = "2.0.0";
-const CHANGELOG = [
-  {
-    version: "2.0.0",
-    date: "2026-07-03",
-    title: "Grosses Update: Konten & Cloud",
-    changes: [
+
+/* ═══════════════════════════════════════════════════════════════
+   UPDATES — Für ein neues Update einfach OBEN einen neuen Block
+   einfügen. Version & Nummer macht die App automatisch.
+   Format:  { date:"2026-07-15", title:"Kurzer Titel", changes:[
+              "Neu: ...", "Verbessert: ...",
+            ]},
+   ═══════════════════════════════════════════════════════════════ */
+const UPDATES = [
+
+  { date:"2026-07-03", title:"Grosses Update: Konten & Cloud", changes:[
       "Neu: Persönliche Benutzerkonten – jeder hat seinen eigenen Bereich",
       "Neu: Automatische Cloud-Synchronisation über alle Geräte",
       "Neu: Tageskalender-Ansicht auf der Startseite mit Zeitraster",
@@ -3903,9 +3907,14 @@ const CHANGELOG = [
       "Verbessert: Am Handy bleibst du eingeloggt, am Computer wird beim Schliessen abgemeldet",
       "Verbessert: Tägliche Ausgaben – Bearbeiten und Löschen funktioniert wieder",
       "Verbessert: Rechnungen zählen erst zum Saldo, wenn sie bezahlt sind",
-    ]
-  }
+  ]},
+
 ];
+// Auto: Versionsnummer = Anzahl Updates (neuestes zuerst). Erstes = höchste Nummer.
+const CHANGELOG = UPDATES.map(function(u,i){
+  return { version:(UPDATES.length-i)+".0", date:u.date, title:u.title, changes:u.changes };
+});
+const APP_VERSION = CHANGELOG.length ? CHANGELOG[0].version : "1.0";
 function isDev(){
   try{var u=JSON.parse(window.authStore.get("lg_user"));return u&&u.username===DEV_ACCOUNT;}catch(e){return false;}
 }
