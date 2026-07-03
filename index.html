@@ -1087,6 +1087,28 @@ window.authStore={
     </div>
   </div>
 
+  <div class="changelogModal" id="clEditModal">
+    <div class="changelogBox">
+      <div class="cl-head">
+        <div class="cl-badge">🛠</div>
+        <div class="cl-version">Developer</div>
+        <div class="cl-title">Update veröffentlichen</div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Titel des Updates</label>
+        <input type="text" id="clEditTitle" placeholder="z.B. Kleine Verbesserungen" style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);font-size:14px;box-sizing:border-box;font-family:'DM Sans',sans-serif">
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Änderungen (eine pro Zeile)</label>
+        <textarea id="clEditChanges" rows="6" placeholder="Neu: Was du hinzugefügt hast&#10;Verbessert: Was du gefixt hast&#10;Behoben: Welchen Fehler du behoben hast" style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);font-size:14px;box-sizing:border-box;font-family:'DM Sans',sans-serif;line-height:1.5;resize:vertical"></textarea>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Tipp: Beginne jede Zeile mit „Neu:", „Verbessert:" oder „Behoben:"</div>
+      </div>
+      <div class="cl-edit-err" id="clEditErr" style="color:var(--red);font-size:12.5px;min-height:16px;margin-bottom:10px"></div>
+      <button class="cl-btn" id="clEditPublish">📢 Update veröffentlichen</button>
+      <button class="cl-btn" id="clEditCancel" style="background:transparent;border:1px solid var(--line);color:var(--muted);margin-top:8px">Abbrechen</button>
+    </div>
+  </div>
+
   <!-- ============ HOME (kombinierte Startseite) ============ -->
   <section class="view active" id="view-home">
     <div class="clockcard">
@@ -1676,6 +1698,10 @@ window.authStore={
           <button class="setBtn" id="adminLoadUsers">👥 Konten laden</button>
         </div>
         <div id="adminUserList" style="margin-top:10px"></div>
+        <div class="setRow" style="margin-top:12px;border-top:1px solid var(--line);padding-top:16px">
+          <div class="setTxt"><b>Update veröffentlichen</b><span>Neues „Was ist neu"-Fenster für alle Benutzer erstellen</span></div>
+          <button class="setBtn primary" id="openClEditor">📢 Update erstellen</button>
+        </div>
       </div>
 
     </div>
@@ -3888,15 +3914,9 @@ let cloudSyncTimer = null;
 let lastCloudPushAt = null;
 const DEV_ACCOUNT = "luka.gc@icloud.com";
 
-/* ═══════════════════════════════════════════════════════════════
-   UPDATES — Für ein neues Update einfach OBEN einen neuen Block
-   einfügen. Version & Nummer macht die App automatisch.
-   Format:  { date:"2026-07-15", title:"Kurzer Titel", changes:[
-              "Neu: ...", "Verbessert: ...",
-            ]},
-   ═══════════════════════════════════════════════════════════════ */
-const UPDATES = [
-
+/* Updates werden aus der Cloud geladen (vom Developer in der App eingegeben).
+   Fallback-Startwert, falls die Cloud noch leer ist: */
+let UPDATES = [
   { date:"2026-07-03", title:"Grosses Update: Konten & Cloud", changes:[
       "Neu: Persönliche Benutzerkonten – jeder hat seinen eigenen Bereich",
       "Neu: Automatische Cloud-Synchronisation über alle Geräte",
@@ -3905,16 +3925,17 @@ const UPDATES = [
       "Neu: Wetter-Vorhersage für 7 Tage",
       "Neu: 20%-Sparbetrag nach Lohnauszahltagen aufgeschlüsselt",
       "Verbessert: Am Handy bleibst du eingeloggt, am Computer wird beim Schliessen abgemeldet",
-      "Verbessert: Tägliche Ausgaben – Bearbeiten und Löschen funktioniert wieder",
-      "Verbessert: Rechnungen zählen erst zum Saldo, wenn sie bezahlt sind",
   ]},
-
 ];
-// Auto: Versionsnummer = Anzahl Updates (neuestes zuerst). Erstes = höchste Nummer.
-const CHANGELOG = UPDATES.map(function(u,i){
-  return { version:(UPDATES.length-i)+".0", date:u.date, title:u.title, changes:u.changes };
-});
-const APP_VERSION = CHANGELOG.length ? CHANGELOG[0].version : "1.0";
+let CHANGELOG = [];
+let APP_VERSION = "1.0";
+function rebuildChangelog(){
+  CHANGELOG = UPDATES.map(function(u,i){
+    return { version:(UPDATES.length-i)+".0", date:u.date, title:u.title, changes:u.changes };
+  });
+  APP_VERSION = CHANGELOG.length ? CHANGELOG[0].version : "1.0";
+}
+rebuildChangelog();
 function isDev(){
   try{var u=JSON.parse(window.authStore.get("lg_user"));return u&&u.username===DEV_ACCOUNT;}catch(e){return false;}
 }
@@ -4247,6 +4268,34 @@ function showChangelog(){
   var v=$("clVersion");if(v)v.textContent="Version "+APP_VERSION;
   var m=$("changelogModal");if(m)m.classList.add("show");
 }
+async function loadChangelogFromCloud(){
+  try{
+    var r=await fetch(CLOUD_API_BASE+"/api/changelog");
+    if(r.ok){
+      var d=await r.json();
+      if(d&&Array.isArray(d.updates)&&d.updates.length){
+        UPDATES=d.updates;
+        rebuildChangelog();
+      }
+    }
+  }catch(e){/* offline: use fallback UPDATES */}
+}
+
+async function publishUpdate(title,changesArr){
+  var newUpdate={date:ymd(new Date()),title:title,changes:changesArr};
+  var payload={updates:[newUpdate].concat(UPDATES)};
+  var token=getCloudToken();
+  var r=await fetch(CLOUD_API_BASE+"/api/changelog",{
+    method:"POST",
+    headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
+    body:JSON.stringify(payload)
+  });
+  if(!r.ok){var d=await r.json();throw new Error(d.error||"Fehler beim Speichern");}
+  UPDATES=payload.updates;
+  rebuildChangelog();
+  return true;
+}
+
 function setupChangelog(){
   // Version display in settings
   var vt=$("setVersionTxt");if(vt)vt.textContent=APP_VERSION;
@@ -4259,12 +4308,47 @@ function setupChangelog(){
   // "Was ist neu" button in settings
   var wb=$("setChangelog");
   if(wb)wb.addEventListener("click",showChangelog);
-  // Auto-show if new version
-  var seen="";
-  try{seen=window.authStore.get("seenVersion")||localStorage.getItem("seenVersion")||"";}catch(e){}
-  if(seen!==APP_VERSION){
-    setTimeout(showChangelog,900);
-  }
+
+  // Developer: open editor
+  var oe=$("openClEditor");
+  if(oe)oe.addEventListener("click",function(){
+    $("clEditTitle").value="";
+    $("clEditChanges").value="";
+    $("clEditErr").textContent="";
+    $("clEditModal").classList.add("show");
+  });
+  // Developer: cancel editor
+  var ec=$("clEditCancel");
+  if(ec)ec.addEventListener("click",function(){$("clEditModal").classList.remove("show");});
+  // Developer: publish
+  var ep=$("clEditPublish");
+  if(ep)ep.addEventListener("click",async function(){
+    var title=$("clEditTitle").value.trim();
+    var raw=$("clEditChanges").value.trim();
+    var err=$("clEditErr");
+    if(!title){err.textContent="Bitte einen Titel eingeben";return;}
+    var changesArr=raw.split("\n").map(function(l){return l.trim();}).filter(function(l){return l.length;});
+    if(!changesArr.length){err.textContent="Bitte mindestens eine Änderung eingeben";return;}
+    var btn=this;btn.disabled=true;btn.textContent="Wird veröffentlicht …";err.textContent="";
+    try{
+      await publishUpdate(title,changesArr);
+      $("clEditModal").classList.remove("show");
+      var vt2=$("setVersionTxt");if(vt2)vt2.textContent=APP_VERSION;
+      try{window.authStore.set("seenVersion",APP_VERSION);}catch(e){}
+      hint("✓ Update veröffentlicht – alle Benutzer sehen es beim nächsten Öffnen",4000);
+    }catch(e){err.textContent=e.message;}
+    btn.disabled=false;btn.textContent="📢 Update veröffentlichen";
+  });
+
+  // Auto-show changelog if new version (after cloud load)
+  loadChangelogFromCloud().then(function(){
+    var vt3=$("setVersionTxt");if(vt3)vt3.textContent=APP_VERSION;
+    var seen="";
+    try{seen=window.authStore.get("seenVersion")||localStorage.getItem("seenVersion")||"";}catch(e){}
+    if(seen!==APP_VERSION){
+      setTimeout(showChangelog,900);
+    }
+  });
 }
 
 // ---- APP STARTUP ----
