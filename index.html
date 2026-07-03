@@ -399,12 +399,14 @@
 
   /* Generic list rows */
   .list{border-top:1px solid var(--line)}
-  .row{display:grid;grid-template-columns:1fr auto;align-items:center;padding:11px 4px;border-bottom:1px solid var(--line);position:relative}
-  .row .de-edit,.row .del{position:absolute;top:8px;width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);cursor:pointer;font-size:12px;display:grid;place-items:center;z-index:1;transition:.15s}
-  .row .de-edit{right:38px}
-  .row .del{right:4px}
-  .row .de-edit:hover{border-color:var(--gold);color:var(--gold)}
-  .row .del:hover{border-color:var(--red);color:var(--red)}
+  .row{display:grid;align-items:center;padding:11px 4px;border-bottom:1px solid var(--line)}
+  .row .mono{font-family:"DM Mono",monospace}
+  .de-row{display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px solid var(--line)}
+  .de-row .rl{flex:1;min-width:0}
+  .de-row .rv{font-family:"Bebas Neue",sans-serif;font-size:18px;letter-spacing:.02em;white-space:nowrap}
+  .de-row .de-edit,.de-row .del{flex:none;width:30px;height:30px;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);cursor:pointer;font-size:13px;display:grid;place-items:center;transition:.15s;position:static}
+  .de-row .de-edit:hover{border-color:var(--gold);color:var(--gold)}
+  .de-row .del:hover{border-color:var(--red);color:var(--red)}
   .row .mono{font-family:"DM Mono",monospace}
   .empty{padding:18px 4px;color:var(--muted-2);font-size:13px}
 
@@ -2710,7 +2712,7 @@ function renderDailyExpenses(){
   list.innerHTML=sorted.slice(0,80).map(e=>{
     const d=parseYmd(e.date);
     const dev=e.device?` \u00b7 ${escapeHtml(e.device)}`:"";
-    return `<div class="row"><button class="de-edit" data-id="${e.id}" title="Bearbeiten">\u270e</button><button class="del" data-id="${e.id}" title="L\u00f6schen">\u00d7</button><div class="rl"><b>${escapeHtml(e.desc)}</b><div class="meta">${ddmm(d)}${d.getFullYear()} \u00b7 <span style="color:${dailyCatColor(e.cat)}">${escapeHtml(e.cat)}</span>${dev}</div></div><div class="rv">CHF ${fmt(e.amount)}</div></div>`;
+    return `<div class="de-row"><div class="rl"><b>${escapeHtml(e.desc)}</b><div class="meta">${ddmm(d)}${d.getFullYear()} \u00b7 <span style="color:${dailyCatColor(e.cat)}">${escapeHtml(e.cat)}</span>${dev}</div></div><div class="rv">CHF ${fmt(e.amount)}</div><button class="de-edit" data-id="${e.id}" title="Bearbeiten">\u270e</button><button class="del" data-id="${e.id}" title="L\u00f6schen">\u00d7</button></div>`;
   }).join("");
   list.querySelectorAll(".del").forEach(b=>b.addEventListener("click",async()=>{
     dailyExp=dailyExp.filter(x=>x.id!==b.dataset.id);
@@ -3794,9 +3796,12 @@ function loadLocal(){
 }
 
 /* ---- 1b) Cloud-Sync (Cloudflare Worker + KV) — gleiche Daten auf allen Geräten ---- */
-const CLOUD_API_BASE = localStorage.getItem("lg_api_base") || "https://use-everyday.luka-gc.workers.dev"; // Worker-URL, z.B. https://everyday-api.dein-name.workers.dev
+const CLOUD_API_BASE = localStorage.getItem("lg_api_base") || "https://use-everyday.luka-gc.workers.dev";
 let cloudToken = null;
 let currentUser = null;
+let cloudSyncOK = false;
+let cloudSyncTimer = null;
+let lastCloudPushAt = null;
 
 function getCloudToken(){
   if(cloudToken) return cloudToken;
@@ -3867,7 +3872,6 @@ function scheduleCloudPush(){
   cloudSyncTimer = setTimeout(cloudPush, 1500);
 }
 
-let lastCloudPushAt = null;
 function setCloudBadge(state, text){
   const badge = $("cloudBadge");
   if(badge){
@@ -4124,6 +4128,19 @@ async function seedFromBrowserStore(){
   renderApptTplBar();
   renderTodoTplBar();
   setInterval(cloudPull,5*60*1000);
+
+  // Initial cloud sync: push local data to cloud so badge confirms sync
+  if(getCloudToken() && CLOUD_API_BASE){
+    setTimeout(async function(){
+      try{
+        var ok=await cloudPush();
+        if(ok){setCloudBadge("synced","☁ Synchronisiert");}
+        else{setCloudBadge("error","☁ Sichern fehlgeschlagen");}
+      }catch(e){setCloudBadge("error","☁ Keine Verbindung");console.error("Initial push:",e);}
+    },2000);
+  }else{
+    setCloudBadge("","☁ Offline");
+  }
 
   // User bar (only if logged in)
   try{
