@@ -4038,101 +4038,81 @@ async function seedFromBrowserStore(){
 
 /* ---------- AUTH SYSTEM ---------- */
 // ---- APP STARTUP ----
-async function startApp(){
+(async function init(){
+  // Load data: 1) cloud (if token), 2) localStorage, 3) legacy
+  var token=getCloudToken();
+  var fromCloud=false;
+  if(token && CLOUD_API_BASE){
+    try{
+      var r=await fetch(CLOUD_API_BASE+"/api/data",{headers:{"Authorization":"Bearer "+token}});
+      if(r.ok){var data=await r.json();if(data&&typeof data==="object"&&Object.keys(data).length>0){applyDump(data);fromCloud=true;cloudSyncOK=true;try{setCloudBadge("synced","☁ Synchronisiert");}catch(e){}}}
+    }catch(e){}
+  }
+  var fromLocal=fromCloud?true:loadLocal();
+  var seeded=fromLocal?false:await seedFromBrowserStore();
+
+  wage=await load("settings:wage",0);
+  expenses=await load("expenses:list",[]);
+  extra=await load("extra:list",[]);
+  recurring=await load("recurring:list",[]);
+  appointments=await load("appt:list",[]);
+  notes=await load("notes:list",[]);
+  dailyExp=await load("daily:list",[]);
+  todos=await load("todos:list",[]);
+  docs=await load("docs:list",[]);
+  apptTemplates=await load("appt:templates",[]);
+  todoTemplates=await load("todo:templates",[]);
+  wxLoc=await load("settings:wxloc",null);
+
+  $("deDate").value=ymd(new Date());
+  $("eDate").value=ymd(new Date());
+  $("xDate").value=ymd(new Date());
+  $("rStart").value=ym(new Date());
+  $("aDate").value=ymd(new Date());
+  $("nDate").value=ymd(new Date());
+  $("tDue").value=ymd(new Date());
+  $("aCat").innerHTML=Object.entries(CATS).map(([k,c])=>`<option value="${k}">${c.label}</option>`).join("");
+  $("aCat").value="termin";
+  setStatus("open");
+  setApptMode(false);
+  setWageType("hourly");
+  setREndMode("never");
+  updateRepeatFields();
+  updateTodoRepeatFields();
+  if(fsSupported()){$("fsRow").style.display="";$("fsNote").style.display="none";}
+  else{$("fsRow").style.display="none";$("fsNote").style.display="";}
+
+  var added=await materializeRecurring();
+  await renderAll();
+  renderClock();setInterval(renderClock,30000);
+  renderNotes();
+  renderTodos();
+  renderWorld("home");
+  if(added){persistLocal();markClean();}
+  else if(seeded){markDirty();hint("Bestehende Daten übernommen",4000);}
+  else{markClean();}
+  checkBackupReminder();
+  updateNotifyBtn();
+  checkAndSendDueNotifications(false);
+  checkAppointmentReminders();
+  checkWorkConfirm();
+  checkExpensePrompt();
+  renderApptTplBar();
+  renderTodoTplBar();
+  setInterval(cloudPull,5*60*1000);
+
+  // User bar (only if logged in)
   try{
-    // UI form defaults
-    try{
-      $("deDate").value=ymd(new Date());
-      $("eDate").value=ymd(new Date());
-      $("xDate").value=ymd(new Date());
-      $("rStart").value=ym(new Date());
-      $("aDate").value=ymd(new Date());
-      $("nDate").value=ymd(new Date());
-      $("tDue").value=ymd(new Date());
-      $("aCat").innerHTML=Object.entries(CATS).map(([k,c])=>`<option value="${k}">${c.label}</option>`).join("");
-      $("aCat").value="termin";
-      setStatus("open");
-      setApptMode(false);
-      setWageType("hourly");
-      setREndMode("never");
-      updateRepeatFields();
-      updateTodoRepeatFields();
-      if(fsSupported()){$("fsRow").style.display="";$("fsNote").style.display="none";}
-      else{$("fsRow").style.display="none";$("fsNote").style.display="";}
-    }catch(e){console.warn("Setup error (non-fatal):",e);}
-
-    // Show user bar
-    try{
-      var u=localStorage.getItem("lg_user");
-      if(u){
-        var user=JSON.parse(u);
-        var bar=document.createElement("div");
-        bar.className="auth-user-bar";
-        bar.innerHTML='<span class="uname">'+(user.displayName||user.username)+'</span><button id="logoutBtn">Abmelden</button>';
-        document.body.appendChild(bar);
-        document.getElementById("logoutBtn").addEventListener("click",function(){if(confirm("Abmelden?")){localStorage.removeItem("lg_auth_token");localStorage.removeItem("lg_user");location.reload();}});
-      }
-    }catch(e){console.warn("User bar error:",e);}
-
-    // Load data: 1) cloud, 2) localStorage, 3) legacy
-    let fromCloud=false, fromLocal=false, seeded=false;
-    var token=getCloudToken();
-    if(token && CLOUD_API_BASE){
-      try{
-        var r=await fetch(CLOUD_API_BASE+"/api/data",{headers:{"Authorization":"Bearer "+token}});
-        if(r.ok){var data=await r.json();if(data&&typeof data==="object"&&Object.keys(data).length>0){applyDump(data);fromCloud=true;cloudSyncOK=true;try{setCloudBadge("synced","☁ Synchronisiert");}catch(e){}}}
-      }catch(e){console.warn("Cloud pull error:",e);}
+    var u=localStorage.getItem("lg_user");
+    if(u){
+      var user=JSON.parse(u);
+      var bar=document.createElement("div");
+      bar.className="auth-user-bar";
+      bar.innerHTML='<span class="uname">'+(user.displayName||user.username)+'</span><button id="logoutBtn">Abmelden</button>';
+      document.body.appendChild(bar);
+      document.getElementById("logoutBtn").addEventListener("click",function(){if(confirm("Abmelden?")){localStorage.removeItem("lg_auth_token");localStorage.removeItem("lg_user");location.reload();}});
     }
-    fromLocal=fromCloud?true:loadLocal();
-    seeded=fromLocal?false:await seedFromBrowserStore();
-
-    // Load all data arrays
-    wage=await load("settings:wage",0);
-    expenses=await load("expenses:list",[]);
-    extra=await load("extra:list",[]);
-    recurring=await load("recurring:list",[]);
-    appointments=await load("appt:list",[]);
-    notes=await load("notes:list",[]);
-    dailyExp=await load("daily:list",[]);
-    todos=await load("todos:list",[]);
-    docs=await load("docs:list",[]);
-    apptTemplates=await load("appt:templates",[]);
-    todoTemplates=await load("todo:templates",[]);
-    wxLoc=await load("settings:wxloc",null);
-
-    // Render everything
-    var added=await materializeRecurring();
-    await renderAll();
-    renderClock();setInterval(renderClock,30000);
-    renderNotes();
-    renderTodos();
-    renderWorld("home");
-    if(added){persistLocal();markClean();}
-    else if(seeded){markDirty();hint("Bestehende Daten übernommen",4000);}
-    else{markClean();}
-    try{checkBackupReminder();}catch(e){}
-    try{updateNotifyBtn();}catch(e){}
-    try{checkAndSendDueNotifications(false);}catch(e){}
-    try{checkAppointmentReminders();}catch(e){}
-    try{checkWorkConfirm();}catch(e){}
-    try{checkExpensePrompt();}catch(e){}
-    try{renderApptTplBar();}catch(e){}
-    try{renderTodoTplBar();}catch(e){}
-    setInterval(cloudPull,5*60*1000);
-    console.log("EVERYDAY started OK");
-  }catch(e){
-    console.error("startApp error:",e);
-    document.body.style.background="#0a0a0a";
-    document.body.insertAdjacentHTML("beforeend",'<div style="position:fixed;bottom:20px;left:20px;right:20px;background:#1a1408;border:1px solid #c8a96e;color:#ece9e2;padding:16px;border-radius:10px;font-size:13px;z-index:99999">Fehler beim Laden: '+e.message+'</div>');
-  }
-}
-
-// Boot: only start if logged in (token exists)
-(function(){
-  var token=localStorage.getItem("lg_auth_token");
-  if(token){
-    startApp();
-  }
+  }catch(e){}
 })();
 })();
 </script>
