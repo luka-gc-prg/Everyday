@@ -5,6 +5,71 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 
+<!-- Lockscreen CSS -->
+<style>
+  #lockscreen{position:fixed;inset:0;z-index:10000;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:14vh 24px 8vh;touch-action:none;user-select:none;transition:transform .4s cubic-bezier(.22,1,.36,1),opacity .4s ease}
+  #lockscreen::before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(200,169,110,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(200,169,110,.04) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+  #lockscreen::after{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 900px 600px at 12% -8%,rgba(200,169,110,.16),transparent 60%),radial-gradient(ellipse 800px 700px at 100% 18%,rgba(200,169,110,.08),transparent 65%),radial-gradient(ellipse 700px 600px at 50% 100%,rgba(200,169,110,.06),transparent 60%)}
+  #lockscreen.unlocked{transform:translateY(-100%);opacity:0;pointer-events:none}
+  .lock-top{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:6vh}
+  .lock-date{font-size:12.5px;letter-spacing:.14em;color:#8a8078;text-transform:uppercase}
+  .lock-middle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
+  .lock-slide-track{position:relative;width:min(88vw,320px);height:72px;border-radius:999px;background:linear-gradient(180deg,rgba(20,18,16,.55),rgba(8,7,6,.55));border:1px solid rgba(200,169,110,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.03),inset 0 -1px 10px rgba(0,0,0,.35),0 10px 30px rgba(0,0,0,.3);display:flex;align-items:center;padding:5px;overflow:hidden}
+  .lock-slide-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;padding-left:62px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;background:linear-gradient(90deg,#6b6258 0%,#6b6258 35%,#f5f2ed 50%,#6b6258 65%,#6b6258 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:slideShimmer 2.8s linear infinite;pointer-events:none;white-space:nowrap}
+  .lock-slide-arrows{display:inline-flex;color:#c8a96e;-webkit-text-fill-color:#c8a96e;font-size:13px;letter-spacing:0;animation:arrowPulse 1.4s ease-in-out infinite}
+  @keyframes slideShimmer{0%{background-position:200% 0}100%{background-position:-50% 0}}
+  @keyframes arrowPulse{0%,100%{transform:translateX(0);opacity:.6}50%{transform:translateX(4px);opacity:1}}
+  .lock-logo-wrap{position:relative;z-index:2;cursor:grab;touch-action:none;display:flex;align-items:center}
+  .lock-logo-wrap.snap{transition:transform .35s cubic-bezier(.22,1,.36,1)}
+  .lock-logo-wrap:active{cursor:grabbing}
+  .lock-logo-badge{position:relative;height:62px;padding:0 28px 0 14px;border-radius:50px;background:linear-gradient(180deg,#141210,#0a0908);border:1.5px solid #c8a96e;box-shadow:0 8px 22px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.04);display:flex;align-items:center;gap:12px}
+  .lock-logo-clock{width:38px;height:38px;border-radius:50%;border:2px solid #c8a96e;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
+  .lock-logo-clock::before{content:"";position:absolute;width:1.6px;height:11px;background:#c8a96e;top:6px;left:50%;transform:translateX(-50%);transform-origin:bottom center;border-radius:2px;animation:lockH 8s linear infinite}
+  .lock-logo-clock::after{content:"";position:absolute;width:1.6px;height:8px;background:#c8a96e;top:50%;left:50%;transform-origin:bottom center;transform:translateX(-50%) translateY(-100%) rotate(55deg);border-radius:2px;animation:lockM 4s linear infinite}
+  @keyframes lockH{0%{transform:translateX(-50%) rotate(0)}100%{transform:translateX(-50%) rotate(360deg)}}
+  @keyframes lockM{0%{transform:translateX(-50%) translateY(-100%) rotate(55deg)}100%{transform:translateX(-50%) translateY(-100%) rotate(415deg)}}
+  .lock-logo-text{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.08em;color:#f5f2ed;line-height:1}
+  .lock-bottom{min-height:18px}
+</style>
+
+<!-- Lockscreen -->
+<div id="lockscreen">
+  <div class="lock-top">
+    <div class="lock-date" id="lockDate">—</div>
+  </div>
+  <div class="lock-middle">
+    <div class="lock-slide-track" id="lockTrack">
+      <span class="lock-slide-label" id="lockTrackLabel">Nach rechts wischen <span class="lock-slide-arrows">›››</span></span>
+      <div class="lock-logo-wrap" id="lockHandle">
+        <div class="lock-logo-badge">
+          <div class="lock-logo-clock"></div>
+          <span class="lock-logo-text">EVERYDAY</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="lock-bottom"></div>
+</div>
+<script>
+(function(){
+  // Lock date
+  var DAYS=["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
+  var MONTHS=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+  var n=new Date();var ld=document.getElementById("lockDate");
+  if(ld)ld.textContent=DAYS[(n.getDay()+6)%7]+", "+n.getDate()+". "+MONTHS[n.getMonth()]+" "+n.getFullYear();
+  // Slide to unlock
+  var handle=document.getElementById("lockHandle"),track=document.getElementById("lockTrack"),label=document.getElementById("lockTrackLabel");
+  if(!handle||!track)return;
+  var startX=0,dx=0,maxDx=0,dragging=false;
+  function onStart(e){dragging=true;handle.classList.remove("snap");startX=(e.touches?e.touches[0]:e).clientX-dx;maxDx=track.offsetWidth-handle.offsetWidth-10;}
+  function onMove(e){if(!dragging)return;e.preventDefault();var cx=(e.touches?e.touches[0]:e).clientX;dx=Math.max(0,Math.min(cx-startX,maxDx));handle.style.transform="translateX("+dx+"px)";if(label)label.style.opacity=Math.max(0,1-dx/(maxDx*0.5));}
+  function onEnd(){if(!dragging)return;dragging=false;if(dx>maxDx*0.65){handle.classList.add("snap");handle.style.transform="translateX("+maxDx+"px)";document.getElementById("lockscreen").classList.add("unlocked");}else{handle.classList.add("snap");handle.style.transform="translateX(0)";dx=0;if(label)label.style.opacity=1;}}
+  handle.addEventListener("mousedown",onStart);handle.addEventListener("touchstart",onStart,{passive:false});
+  document.addEventListener("mousemove",onMove);document.addEventListener("touchmove",onMove,{passive:false});
+  document.addEventListener("mouseup",onEnd);document.addEventListener("touchend",onEnd);
+})();
+</script>
+
 <!-- Login/Register Overlay -->
 <style>
   #authOverlay{position:fixed;inset:0;z-index:9999;background:#0a0a0a;display:flex;align-items:center;justify-content:center;padding:24px;transition:opacity .4s ease,transform .4s ease}
@@ -3972,171 +4037,103 @@ async function seedFromBrowserStore(){
 // setup moved into startApp
 
 /* ---------- AUTH SYSTEM ---------- */
-function initAuth(){
-  const overlay = document.getElementById("authOverlay");
-  if(!overlay) return startApp();
-  
-  // Tab switching
-  document.querySelectorAll(".auth-tab").forEach(tab=>{
-    tab.addEventListener("click",()=>{
-      document.querySelectorAll(".auth-tab").forEach(t=>t.classList.remove("active"));
-      document.querySelectorAll(".auth-form").forEach(f=>f.classList.remove("active"));
-      tab.classList.add("active");
-      document.getElementById(tab.dataset.tab==="login"?"authLogin":"authRegister").classList.add("active");
-    });
-  });
-
-  function getBase(){
-    const b = CLOUD_API_BASE;
-    if(!b){return null;}
-    return b;
-  }
-
-  // Login
-  document.getElementById("loginBtn").addEventListener("click", async()=>{
-    const user = document.getElementById("loginUser").value.trim();
-    const pw = document.getElementById("loginPw").value;
-    const err = document.getElementById("loginErr");
-    const btn = document.getElementById("loginBtn");
-    if(!user||!pw){err.textContent="E-Mail und Passwort eingeben";return;}
-    const base = getBase();
-    if(!base){err.textContent="Kein API-Server konfiguriert. CLOUD_API_BASE im Code setzen.";return;}
-    btn.disabled=true;btn.textContent="Wird angemeldet …";err.textContent="";
-    try{
-      const r = await fetch(base+"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:user,password:pw})});
-      const d = await r.json();
-      if(!r.ok){err.textContent=d.error||"Anmeldung fehlgeschlagen";btn.disabled=false;btn.textContent="Anmelden";return;}
-      setCloudToken(d.token,{username:d.username,displayName:d.displayName});
-      overlay.classList.add("hidden");
-      setTimeout(()=>{overlay.style.display="none";startApp();},400);
-    }catch(e){err.textContent="API nicht erreichbar — ist der Worker deployed?";btn.disabled=false;btn.textContent="Anmelden";}
-  });
-  document.getElementById("loginPw").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("loginBtn").click();});
-  document.getElementById("loginUser").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("loginPw").focus();});
-
-  // Register
-  document.getElementById("regBtn").addEventListener("click", async()=>{
-    const user = document.getElementById("regUser").value.trim();
-    const name = document.getElementById("regName").value.trim();
-    const pw = document.getElementById("regPw").value;
-    const pw2 = document.getElementById("regPw2").value;
-    const err = document.getElementById("regErr");
-    const btn = document.getElementById("regBtn");
-    if(!user||!pw){err.textContent="E-Mail und Passwort eingeben";return;}
-    if(pw!==pw2){err.textContent="Passwörter stimmen nicht überein";return;}
-    const base = getBase();
-    if(!base){err.textContent="Kein API-Server konfiguriert. CLOUD_API_BASE im Code setzen.";return;}
-    btn.disabled=true;btn.textContent="Wird erstellt …";err.textContent="";
-    try{
-      const r = await fetch(base+"/api/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:user,password:pw,displayName:name||user})});
-      const d = await r.json();
-      if(!r.ok){err.textContent=d.error||"Registrierung fehlgeschlagen";btn.disabled=false;btn.textContent="Konto erstellen";return;}
-      setCloudToken(d.token,{username:d.username,displayName:d.displayName});
-      overlay.classList.add("hidden");
-      setTimeout(()=>{overlay.style.display="none";startApp();},400);
-    }catch(e){err.textContent="API nicht erreichbar — ist der Worker deployed?";btn.disabled=false;btn.textContent="Konto erstellen";}
-  });
-  document.getElementById("regPw2").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("regBtn").click();});
-
-  // Check existing token — auto-login
-  const existingToken = getCloudToken();
-  const existingUser = (()=>{try{return JSON.parse(localStorage.getItem("lg_user"));}catch(e){return null;}})();
-  if(existingToken && existingUser){
-    currentUser = existingUser;
-    overlay.classList.add("hidden");
-    setTimeout(()=>{overlay.style.display="none";startApp();},100);
-  }
-}
-
+// ---- APP STARTUP ----
 async function startApp(){
-  // UI setup
-  $("deDate").value=ymd(new Date());
-  $("eDate").value=ymd(new Date());
-  $("xDate").value=ymd(new Date());
-  $("rStart").value=ym(new Date());
-  $("aDate").value=ymd(new Date());
-  $("nDate").value=ymd(new Date());
-  $("tDue").value=ymd(new Date());
-  $("aCat").innerHTML=Object.entries(CATS).map(([k,c])=>`<option value="${k}">${c.label}</option>`).join("");
-  $("aCat").value="termin";
-  setStatus("open");
-  setApptMode(false);
-  setWageType("hourly");
-  setREndMode("never");
-  updateRepeatFields();
-  updateTodoRepeatFields();
-  if(fsSupported()){$("fsRow").style.display="";$("fsNote").style.display="none";}
-  else{$("fsRow").style.display="none";$("fsNote").style.display="";}
-  // Show user bar
-  if(currentUser){
-    const bar = document.createElement("div");
-    bar.className = "auth-user-bar";
-    bar.innerHTML = `<span class="uname">${currentUser.displayName||currentUser.username}</span><button id="logoutBtn">Abmelden</button>`;
-    document.body.appendChild(bar);
-    document.getElementById("logoutBtn").addEventListener("click",()=>{if(confirm("Möchtest du dich abmelden?"))logout();});
-  }
-
-  // 1) Try cloud pull first (newest data across devices)
-  let fromCloud = false;
-  const token = getCloudToken();
-  if(token && CLOUD_API_BASE){
+  try{
+    // UI form defaults
     try{
-      const r = await fetch(CLOUD_API_BASE+"/api/data",{headers:{"Authorization":"Bearer "+token}});
-      if(r.ok){
-        const data = await r.json();
-        if(data && typeof data === "object" && Object.keys(data).length > 0){
-          applyDump(data);
-          fromCloud = true;
-          cloudSyncOK = true;
-          setCloudBadge("synced","☁ Synchronisiert");
-        }
+      $("deDate").value=ymd(new Date());
+      $("eDate").value=ymd(new Date());
+      $("xDate").value=ymd(new Date());
+      $("rStart").value=ym(new Date());
+      $("aDate").value=ymd(new Date());
+      $("nDate").value=ymd(new Date());
+      $("tDue").value=ymd(new Date());
+      $("aCat").innerHTML=Object.entries(CATS).map(([k,c])=>`<option value="${k}">${c.label}</option>`).join("");
+      $("aCat").value="termin";
+      setStatus("open");
+      setApptMode(false);
+      setWageType("hourly");
+      setREndMode("never");
+      updateRepeatFields();
+      updateTodoRepeatFields();
+      if(fsSupported()){$("fsRow").style.display="";$("fsNote").style.display="none";}
+      else{$("fsRow").style.display="none";$("fsNote").style.display="";}
+    }catch(e){console.warn("Setup error (non-fatal):",e);}
+
+    // Show user bar
+    try{
+      var u=localStorage.getItem("lg_user");
+      if(u){
+        var user=JSON.parse(u);
+        var bar=document.createElement("div");
+        bar.className="auth-user-bar";
+        bar.innerHTML='<span class="uname">'+(user.displayName||user.username)+'</span><button id="logoutBtn">Abmelden</button>';
+        document.body.appendChild(bar);
+        document.getElementById("logoutBtn").addEventListener("click",function(){if(confirm("Abmelden?")){localStorage.removeItem("lg_auth_token");localStorage.removeItem("lg_user");location.reload();}});
       }
-    }catch(e){/* offline — use local data */}
+    }catch(e){console.warn("User bar error:",e);}
+
+    // Load data: 1) cloud, 2) localStorage, 3) legacy
+    let fromCloud=false, fromLocal=false, seeded=false;
+    var token=getCloudToken();
+    if(token && CLOUD_API_BASE){
+      try{
+        var r=await fetch(CLOUD_API_BASE+"/api/data",{headers:{"Authorization":"Bearer "+token}});
+        if(r.ok){var data=await r.json();if(data&&typeof data==="object"&&Object.keys(data).length>0){applyDump(data);fromCloud=true;cloudSyncOK=true;try{setCloudBadge("synced","☁ Synchronisiert");}catch(e){}}}
+      }catch(e){console.warn("Cloud pull error:",e);}
+    }
+    fromLocal=fromCloud?true:loadLocal();
+    seeded=fromLocal?false:await seedFromBrowserStore();
+
+    // Load all data arrays
+    wage=await load("settings:wage",0);
+    expenses=await load("expenses:list",[]);
+    extra=await load("extra:list",[]);
+    recurring=await load("recurring:list",[]);
+    appointments=await load("appt:list",[]);
+    notes=await load("notes:list",[]);
+    dailyExp=await load("daily:list",[]);
+    todos=await load("todos:list",[]);
+    docs=await load("docs:list",[]);
+    apptTemplates=await load("appt:templates",[]);
+    todoTemplates=await load("todo:templates",[]);
+    wxLoc=await load("settings:wxloc",null);
+
+    // Render everything
+    var added=await materializeRecurring();
+    await renderAll();
+    renderClock();setInterval(renderClock,30000);
+    renderNotes();
+    renderTodos();
+    renderWorld("home");
+    if(added){persistLocal();markClean();}
+    else if(seeded){markDirty();hint("Bestehende Daten übernommen",4000);}
+    else{markClean();}
+    try{checkBackupReminder();}catch(e){}
+    try{updateNotifyBtn();}catch(e){}
+    try{checkAndSendDueNotifications(false);}catch(e){}
+    try{checkAppointmentReminders();}catch(e){}
+    try{checkWorkConfirm();}catch(e){}
+    try{checkExpensePrompt();}catch(e){}
+    try{renderApptTplBar();}catch(e){}
+    try{renderTodoTplBar();}catch(e){}
+    setInterval(cloudPull,5*60*1000);
+    console.log("EVERYDAY started OK");
+  }catch(e){
+    console.error("startApp error:",e);
+    document.body.style.background="#0a0a0a";
+    document.body.insertAdjacentHTML("beforeend",'<div style="position:fixed;bottom:20px;left:20px;right:20px;background:#1a1408;border:1px solid #c8a96e;color:#ece9e2;padding:16px;border-radius:10px;font-size:13px;z-index:99999">Fehler beim Laden: '+e.message+'</div>');
   }
-
-  // 2) Otherwise load from browser localStorage
-  const fromLocal = fromCloud ? true : loadLocal();
-
-  // 3) Otherwise try legacy browser store
-  const seeded = fromLocal ? false : await seedFromBrowserStore();
-
-  // 4) Load all data arrays from mem
-  wage=await load("settings:wage",0);
-  expenses=await load("expenses:list",[]);
-  extra=await load("extra:list",[]);
-  recurring=await load("recurring:list",[]);
-  appointments=await load("appt:list",[]);
-  notes=await load("notes:list",[]);
-  dailyExp=await load("daily:list",[]);
-  todos=await load("todos:list",[]);
-  docs=await load("docs:list",[]);
-  apptTemplates=await load("appt:templates",[]);
-  todoTemplates=await load("todo:templates",[]);
-  wxLoc=await load("settings:wxloc",null);
-
-  // 5) Render everything
-  const added = await materializeRecurring();
-  await renderAll();
-  renderClock();setInterval(renderClock,30000);
-  renderNotes();
-  renderTodos();
-  renderWorld("home");
-  if(added){persistLocal();markClean();}
-  else if(seeded){markDirty();hint("Bestehende Daten übernommen – werden automatisch gespeichert",4000);}
-  else{markClean();}
-  checkBackupReminder();
-  updateNotifyBtn();
-  checkAndSendDueNotifications(false);
-  checkAppointmentReminders();
-  checkWorkConfirm();
-  checkExpensePrompt();
-  renderApptTplBar();
-  renderTodoTplBar();
-  setInterval(cloudPull,5*60*1000);
 }
 
-// Boot
-initAuth();
+// Boot: only start if logged in (token exists)
+(function(){
+  var token=localStorage.getItem("lg_auth_token");
+  if(token){
+    startApp();
+  }
+})();
 })();
 </script>
 </body>
