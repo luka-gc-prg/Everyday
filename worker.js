@@ -67,9 +67,9 @@ async function verifyToken(token, secret) {
 async function handleRegister(request, env) {
   const { username, password, displayName } = await request.json();
   if (!username || !password) return json({ error: "Benutzername und Passwort erforderlich" }, 400);
-  if (username.length < 3) return json({ error: "Benutzername muss min. 3 Zeichen lang sein" }, 400);
+  if (username.length < 3) return json({ error: "E-Mail muss min. 3 Zeichen lang sein" }, 400);
   if (password.length < 6) return json({ error: "Passwort muss min. 6 Zeichen lang sein" }, 400);
-  if (!/^[a-zA-Z0-9_.-]+$/.test(username)) return json({ error: "Benutzername: nur Buchstaben, Zahlen, _ . -" }, 400);
+  if (!/^[a-zA-Z0-9_.@+-]+$/.test(username)) return json({ error: "Ungültige E-Mail-Adresse" }, 400);
 
   const key = "user:" + username.toLowerCase();
   const existing = await env.EVERYDAY.get(key);
