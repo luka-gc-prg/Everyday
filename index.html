@@ -52,6 +52,11 @@
 </div>
 <script>
 (function(){
+  // Skip lockscreen if already logged in
+  if(localStorage.getItem("lg_auth_token")){
+    document.getElementById("lockscreen").style.display="none";
+    return;
+  }
   // Lock date
   var DAYS=["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
   var MONTHS=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
