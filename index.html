@@ -1618,6 +1618,17 @@
 <div class="lightbox" id="lightbox"><span class="lb-close" id="lbClose">×</span><img id="lbImg" src="" alt="Notizbild"></div>
 
 <script>
+window.addEventListener("error",function(ev){
+  var box=document.getElementById("__errbox");
+  if(!box){
+    box=document.createElement("div");
+    box.id="__errbox";
+    box.style.cssText="position:fixed;bottom:12px;left:12px;right:12px;max-height:40vh;overflow:auto;background:#2a1010;border:1px solid #c47b6e;color:#ffd9d2;padding:12px 14px;border-radius:10px;font-family:monospace;font-size:11px;z-index:999999;white-space:pre-wrap";
+    document.body.appendChild(box);
+    box.addEventListener("click",function(){box.style.display="none";});
+  }
+  box.textContent="⚠ FEHLER: "+ev.message+"\n"+(ev.filename||"")+":"+ev.lineno+"\n(antippen zum Schliessen)";
+});
 const DAYS=["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
 const MONTHS=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 const $=id=>document.getElementById(id);
@@ -2658,23 +2669,29 @@ const DAILY_CATS={"Essen & Trinken":"#e08f9b","Snacks & Kaffee":"#d6a05a","Trans
 function dailyCatColor(cat){return DAILY_CATS[cat]||"#7c7a73";}
 let deEditingId=null;
 $("deAdd").addEventListener("click",async()=>{
-  const date=$("deDate").value||ymd(new Date());
-  const amount=parseFloat($("deAmount").value)||0;
-  const desc=$("deDesc").value.trim();
-  const cat=$("deCat").value;
-  if(!amount){hint("Bitte einen Betrag eingeben");return;}
-  if(deEditingId){
-    const e=dailyExp.find(x=>x.id===deEditingId);
-    if(e){e.date=date;e.amount=amount;e.desc=desc||cat;e.cat=cat;e.device=getDeviceLabel();}
-    deEditingId=null;$("deAdd").textContent="+ Ausgabe erfassen";
-    hint("\u2713 Ausgabe aktualisiert",1800);
-  }else{
-    dailyExp.push({id:Date.now()+"-"+Math.random().toString(36).slice(2,6),date,amount,desc:desc||cat,cat,device:getDeviceLabel()});
-    hint("\u2713 Ausgabe erfasst",1800);
+  try{
+    const date=$("deDate").value||ymd(new Date());
+    const amount=parseFloat($("deAmount").value)||0;
+    const desc=$("deDesc").value.trim();
+    const cat=$("deCat").value;
+    if(!amount){hint("Bitte einen Betrag eingeben");return;}
+    if(deEditingId){
+      const e=dailyExp.find(x=>x.id===deEditingId);
+      if(e){e.date=date;e.amount=amount;e.desc=desc||cat;e.cat=cat;e.device=getDeviceLabel();}
+      deEditingId=null;$("deAdd").textContent="+ Ausgabe erfassen";
+      hint("\u2713 Ausgabe aktualisiert",1800);
+    }else{
+      dailyExp.push({id:Date.now()+"-"+Math.random().toString(36).slice(2,6),date,amount,desc:desc||cat,cat,device:getDeviceLabel()});
+      hint("\u2713 Ausgabe erfasst",1800);
+    }
+    await save("daily:list",dailyExp);
+    $("deAmount").value="";$("deDesc").value="";$("deDate").value=ymd(new Date());
+    try{renderDailyExpenses();}catch(e){console.error("renderDailyExpenses:",e);}
+    try{renderHome();}catch(e){console.error("renderHome:",e);}
+  }catch(err){
+    console.error("deAdd error:",err);
+    hint("Fehler: "+err.message,3000);
   }
-  await save("daily:list",dailyExp);
-  $("deAmount").value="";$("deDesc").value="";$("deDate").value=ymd(new Date());
-  renderDailyExpenses();renderHome();
 });
 function renderDailyExpenses(){
   const today=ymd(new Date());
