@@ -890,6 +890,32 @@ window.authStore={
   .verse-ref{font-family:"Bebas Neue",sans-serif;font-size:18px;letter-spacing:.03em;color:var(--gold);margin-top:9px}
 
   .todaySection{margin-top:18px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;overflow:hidden}
+  .widget-toolbar{display:flex;justify-content:flex-end;margin-top:14px}
+  .widget-edit-btn{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:8px 14px;border-radius:20px;cursor:pointer;font-family:"DM Mono",monospace;letter-spacing:.04em;transition:.15s}
+  .widget-edit-btn:hover{border-color:var(--gold);color:var(--gold)}
+  .widget-edit-btn.active{background:var(--accent-faint);border-color:var(--gold);color:var(--gold)}
+  .widget{position:relative}
+  .widget>.todaySection,.widget>.wxcard,.widget>.versecard,.widget>.duecard{margin-top:14px}
+  .widget-ctrl{display:none;position:absolute;top:20px;right:8px;z-index:5;gap:5px}
+  body.widgets-editing .widget-ctrl{display:flex}
+  body.widgets-editing .widget{outline:1.5px dashed var(--gold-dim);outline-offset:3px;border-radius:16px}
+  .widget-ctrl button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--gold);cursor:pointer;font-size:13px;display:grid;place-items:center}
+  .widget-ctrl button:hover{border-color:var(--gold);background:var(--accent-faint)}
+  .widget-ctrl .wc-toggle{color:var(--red)}
+  .widget-hidden-tray{margin-top:16px;background:var(--panel);border:1px dashed var(--line);border-radius:14px;padding:14px}
+  .wht-title{font-family:"DM Mono",monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .wht-chip{display:inline-flex;align-items:center;gap:6px;background:var(--panel-2);border:1px solid var(--line);border-radius:20px;padding:7px 14px;margin:0 6px 6px 0;font-size:12px;color:var(--text);cursor:pointer;transition:.15s}
+  .wht-chip:hover{border-color:var(--gold);color:var(--gold)}
+  .wfin-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:6px}
+  .wfin-item{text-align:center;padding:6px 4px}
+  .wfin-lab{font-family:"DM Mono",monospace;font-size:10px;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
+  .wfin-val{font-family:"Bebas Neue",sans-serif;font-size:19px;letter-spacing:.02em;color:var(--text)}
+  .wfin-item:last-child .wfin-val{color:var(--gold)}
+  .qa-row{margin-top:4px}
+  .qa-row input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);font-size:14px;box-sizing:border-box;font-family:"DM Sans",sans-serif}
+  .qa-btns{display:flex;gap:8px;margin-top:10px}
+  .qa-btn{flex:1;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);font-size:13px;cursor:pointer;font-family:"DM Sans",sans-serif;transition:.15s}
+  .qa-btn:hover{border-color:var(--gold)}
   .todaySection-head{display:flex;align-items:baseline;gap:9px;margin-bottom:6px}
   .ts-icon{font-size:15px;opacity:.85}
   .ts-title{font-family:"Bebas Neue",sans-serif;font-size:22px;letter-spacing:.03em;color:var(--text)}
@@ -1116,46 +1142,135 @@ window.authStore={
       <div class="clock-sub"><span id="clockDate">—</span><span class="dot-sep">•</span><span id="clockKW">KW —</span><span class="clock-weather" id="clockWeather"></span></div>
     </div>
 
-    <div class="wxcard" id="wxCard" style="display:none">
-      <div class="wx-now" id="wxNow"></div>
-      <div class="wx-forecast" id="wxForecast"></div>
+    <div class="widget-toolbar">
+      <button class="widget-edit-btn" id="widgetEditBtn">⚙ Widgets anpassen</button>
     </div>
 
-    <div class="duecard" id="dueCard" style="display:none">
-      <div class="dc-head">
-        <span id="dueCardIcon">🔔</span>
-        <span id="dueCardTitle">Heute & demnächst fällig</span>
+    <div id="widgetContainer">
+
+      <div class="widget" data-widget="weather">
+        <div class="widget-ctrl">
+          <button class="wc-up" title="Nach oben">↑</button>
+          <button class="wc-down" title="Nach unten">↓</button>
+          <button class="wc-toggle" title="Ausblenden">✕</button>
+        </div>
+        <div class="wxcard" id="wxCard" style="display:none">
+          <div class="wx-now" id="wxNow"></div>
+          <div class="wx-forecast" id="wxForecast"></div>
+        </div>
       </div>
-      <div id="dueCardList"></div>
-    </div>
 
-    <div class="todaySection">
-      <div class="todaySection-head">
-        <span class="ts-icon">☀</span>
-        <span class="ts-title">Heute</span>
-        <span class="ts-date" id="todayDateLabel"></span>
+      <div class="widget" data-widget="due">
+        <div class="widget-ctrl">
+          <button class="wc-up" title="Nach oben">↑</button>
+          <button class="wc-down" title="Nach unten">↓</button>
+          <button class="wc-toggle" title="Ausblenden">✕</button>
+        </div>
+        <div class="duecard" id="dueCard" style="display:none">
+          <div class="dc-head">
+            <span id="dueCardIcon">🔔</span>
+            <span id="dueCardTitle">Heute & demnächst fällig</span>
+          </div>
+          <div id="dueCardList"></div>
+        </div>
       </div>
-      <div id="homeDayCal"></div>
+
+      <div class="widget" data-widget="today">
+        <div class="widget-ctrl">
+          <button class="wc-up" title="Nach oben">↑</button>
+          <button class="wc-down" title="Nach unten">↓</button>
+          <button class="wc-toggle" title="Ausblenden">✕</button>
+        </div>
+        <div class="todaySection">
+          <div class="todaySection-head">
+            <span class="ts-icon">☀</span>
+            <span class="ts-title">Heute</span>
+            <span class="ts-date" id="todayDateLabel"></span>
+          </div>
+          <div id="homeDayCal"></div>
+        </div>
+      </div>
+
+      <div class="widget" data-widget="finance">
+        <div class="widget-ctrl">
+          <button class="wc-up" title="Nach oben">↑</button>
+          <button class="wc-down" title="Nach unten">↓</button>
+          <button class="wc-toggle" title="Ausblenden">✕</button>
+        </div>
+        <div class="todaySection">
+          <div class="todaySection-head">
+            <span class="ts-icon">💰</span>
+            <span class="ts-title">Finanzen</span>
+            <span class="ts-date" id="widgetFinMonth"></span>
+          </div>
+          <div class="wfin-grid">
+            <div class="wfin-item"><div class="wfin-lab">Einkommen</div><div class="wfin-val" id="wfinIncome">CHF 0</div></div>
+            <div class="wfin-item"><div class="wfin-lab">Ausgaben</div><div class="wfin-val" id="wfinExpense">CHF 0</div></div>
+            <div class="wfin-item"><div class="wfin-lab">Saldo</div><div class="wfin-val" id="wfinBalance">CHF 0</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="widget" data-widget="tasks">
+        <div class="widget-ctrl">
+          <button class="wc-up" title="Nach oben">↑</button>
+          <button class="wc-down" title="Nach unten">↓</button>
+          <button class="wc-toggle" title="Ausblenden">✕</button>
+        </div>
+        <div class="todaySection">
+          <div class="todaySection-head">
+            <span class="ts-icon">✅</span>
+            <span class="ts-title">Aufgaben</span>
+            <span class="ts-date" id="taskCountLabel"></span>
+          </div>
+          <div id="homeTaskList"></div>
+        </div>
+      </div>
+
+      <div class="widget" data-widget="quickadd">
+        <div class="widget-ctrl">
+          <button class="wc-up" title="Nach oben">↑</button>
+          <button class="wc-down" title="Nach unten">↓</button>
+          <button class="wc-toggle" title="Ausblenden">✕</button>
+        </div>
+        <div class="todaySection">
+          <div class="todaySection-head">
+            <span class="ts-icon">⚡</span>
+            <span class="ts-title">Schnell erfassen</span>
+          </div>
+          <div class="qa-row">
+            <input type="text" id="qaTitle" placeholder="Was? (z.B. Migros 24.50 oder Zahnarzt anrufen)">
+          </div>
+          <div class="qa-btns">
+            <button class="qa-btn qa-exp" id="qaExpBtn">💰 Als Ausgabe</button>
+            <button class="qa-btn qa-task" id="qaTaskBtn">✅ Als Aufgabe</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="widget" data-widget="verse">
+        <div class="widget-ctrl">
+          <button class="wc-up" title="Nach oben">↑</button>
+          <button class="wc-down" title="Nach unten">↓</button>
+          <button class="wc-toggle" title="Ausblenden">✕</button>
+        </div>
+        <div class="versecard">
+          <div class="verse-label">Vers des Tages</div>
+          <div class="verse-text" id="verseText"></div>
+          <div class="verse-ref" id="verseRef"></div>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Finanzen/Journal links removed -->
+    <div id="widgetHidden" class="widget-hidden-tray" style="display:none">
+      <div class="wht-title">Ausgeblendete Widgets — tippen zum Hinzufügen</div>
+      <div id="widgetHiddenList"></div>
+    </div>
+
+    <!-- Legacy hidden elements -->
     <div id="homeFin" style="display:none"></div>
     <div id="homeSch" style="display:none"></div>
-
-    <div class="todaySection" style="margin-top:14px">
-      <div class="todaySection-head">
-        <span class="ts-icon">✅</span>
-        <span class="ts-title">Aufgaben</span>
-        <span class="ts-date" id="taskCountLabel"></span>
-      </div>
-      <div id="homeTaskList"></div>
-    </div>
-
-    <div class="versecard">
-      <div class="verse-label">Vers des Tages</div>
-      <div class="verse-text" id="verseText"></div>
-      <div class="verse-ref" id="verseRef"></div>
-    </div>
   </section>
 
   <!-- ============ START / ÜBERSICHT ============ -->
@@ -1668,6 +1783,26 @@ window.authStore={
       </div>
 
       <div class="setSection">
+        <div class="setSecTitle">Kalender teilen</div>
+        <div class="setRow">
+          <div class="setTxt"><b>Meinen Kalender freigeben</b><span>Andere sehen nur deine Termine – keine Finanzen, keine Notizen, kein Verdienst</span></div>
+        </div>
+        <div style="margin-top:8px">
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <input type="email" id="shareEmailInput" placeholder="E-Mail der Person" style="flex:1;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);font-size:14px;box-sizing:border-box;font-family:'DM Sans',sans-serif">
+            <button class="setBtn" id="shareAddBtn" style="white-space:nowrap">+ Freigeben</button>
+          </div>
+          <div id="shareList"></div>
+          <div class="setNote" id="shareErr" style="color:var(--red);min-height:14px"></div>
+        </div>
+        <div class="setRow" style="margin-top:10px;border-top:1px solid var(--line);padding-top:14px">
+          <div class="setTxt"><b>Mit mir geteilte Kalender</b><span>Kalender, die andere für dich freigegeben haben</span></div>
+          <button class="setBtn" id="loadSharedBtn">🔄 Aktualisieren</button>
+        </div>
+        <div id="sharedWithMeList" style="margin-top:8px"></div>
+      </div>
+
+      <div class="setSection">
         <div class="setSecTitle">Erscheinungsbild</div>
         <div class="setRow">
           <div class="setTxt"><b>Design</b><span>Hell, Dunkel oder automatisch nach Gerät</span></div>
@@ -1790,7 +1925,7 @@ function reminderLabel(mins){
   if(mins>=60)return Math.round(mins/60)+" Std. vorher";
   return mins+" Min. vorher";
 }
-function catOf(a){return CATS[a&&a.cat]||CATS.termin;}
+function catOf(a){if(a&&a._shared)return {color:a._sharedColor||"#7aa6d6",label:(CATS[a.cat]||CATS.termin).label+" · "+a._sharedFrom};return CATS[a&&a.cat]||CATS.termin;}
 const NOTE_COLOR="#5db0a6";
 function notesForDate(d){const key=ymd(d);return notes.filter(n=>n.date===key);}
 function evMinutes(t){if(!t)return 0;const[h,m]=t.split(":").map(Number);return h*60+m;}
@@ -1878,7 +2013,7 @@ function nextPayout(){
 }
 function upcomingAppts(n){
   const t=ymd(new Date());
-  return appointments.filter(a=>a.date>=t).sort((a,b)=>(a.date+(a.start||"")).localeCompare(b.date+(b.start||""))).slice(0,n);
+  return allAppointments().filter(a=>a.date>=t).sort((a,b)=>(a.date+(a.start||"")).localeCompare(b.date+(b.start||""))).slice(0,n);
 }
 function greeting(n){const h=n.getHours();return h<11?"Guten Morgen":h<17?"Guten Tag":h<22?"Guten Abend":"Gute Nacht";}
 function renderClock(){const n=new Date();const html=`<div class="wc-greet">${greeting(n)}</div><div class="wc-dt">${DAYS[(n.getDay()+6)%7]}, ${ddmm(n)}${n.getFullYear()} · ${p2(n.getHours())}:${p2(n.getMinutes())} Uhr</div>`;if($("welcome"))$("welcome").innerHTML=html;if($("welcomeHome"))$("welcomeHome").innerHTML=html;}
@@ -2314,7 +2449,26 @@ function workHoursForDate(d){return manualHoursForDate(d)+shiftHoursForDate(d);}
 function wageOf(a){return (a&&a.wage>0)?a.wage:wage;}
 function shiftIncomeForDate(d){const key=ymd(d);return appointments.filter(a=>a.cat==="arbeit"&&!a.allDay&&a.start&&a.end&&a.date===key).reduce((s,a)=>s+appointmentIncome(a),0);}
 function dayIncome(d){return manualHoursForDate(d)*wage+shiftIncomeForDate(d);}
-function apptsForDate(d){const key=ymd(d);return appointments.filter(a=>a.date===key);}
+let sharedCalendars=[]; // von anderen mit mir geteilte Kalender: [{owner,displayName,appointments:[...]}]
+function allAppointments(){
+  // eigene + geteilte Termine (geteilte bekommen _shared + _sharedFrom Markierung)
+  var result=appointments.slice();
+  sharedCalendars.forEach(function(cal){
+    cal.appointments.forEach(function(a){
+      var copy=Object.assign({},a);
+      copy._shared=true;copy._sharedFrom=cal.displayName;copy._sharedColor=sharedColorFor(cal.owner);
+      result.push(copy);
+    });
+  });
+  return result;
+}
+function sharedColorFor(owner){
+  // stabile Farbe pro Person
+  var colors=["#7aa6d6","#8a7cc7","#5fb8a8","#e08f9b","#d6a05a","#7fa86b"];
+  var h=0;for(var i=0;i<owner.length;i++)h=(h*31+owner.charCodeAt(i))>>>0;
+  return colors[h%colors.length];
+}
+function apptsForDate(d){const key=ymd(d);return allAppointments().filter(a=>a.date===key);}
 function apptSortKey(a){return (a.allDay?"0":"1")+(a.start||"");}
 function renderCatLegend(){$("catLegend").innerHTML=Object.values(CATS).map(c=>`<span class="catchip"><i style="background:${c.color}"></i>${c.label}</span>`).join("")+`<span class="catchip"><i style="background:${NOTE_COLOR}"></i>Notiz</span>`;}
 
@@ -2425,7 +2579,7 @@ function renderCalDay(){
     const durTxt=(a.cat==="arbeit"&&!a.allDay&&a.end)?" · "+fmtHM(evDuration(a))+(a.break&&a.wageType!=="fixed"?" (− "+a.break+" Min. Pause)":"")+" · CHF "+fmt(appointmentIncome(a))+(a.wageType==="fixed"?" (Pauschal)":""):"";
     const serBtn=a.series?`<button class="apdelser" data-s="${a.series}" title="Ganze Serie löschen">⟳×</button>`:"";
     const remTxt=(a.reminder&&a.reminder>0)?` · 🔔 ${reminderLabel(a.reminder)}`:"";
-    return `<div class="row ap-row"><span class="ap-time" style="color:${c.color}">${time}</span><div class="ap-main"><div class="ap-title">${escapeHtml(a.title||c.label)}${a.series?' <span style="color:'+c.color+'">↻</span>':''}</div><div class="ap-note">${c.label}${durTxt}${a.note?" · "+escapeHtml(a.note):""}${remTxt}</div></div><div class="e-act"><button class="apedit" data-id="${a.id}" title="Bearbeiten">✎</button>${serBtn}<button class="apdel" data-id="${a.id}" title="Diesen Termin löschen">×</button></div></div>`;
+    return `<div class="row ap-row"><span class="ap-time" style="color:${c.color}">${time}</span><div class="ap-main"><div class="ap-title">${escapeHtml(a.title||c.label)}${a._shared?' <span style="color:'+c.color+';font-size:10px;font-family:DM Mono,monospace">↗ '+escapeHtml(a._sharedFrom)+'</span>':(a.series?' <span style="color:'+c.color+'">↻</span>':'')}</div><div class="ap-note">${c.label}${durTxt}${a.note?" · "+escapeHtml(a.note):""}${remTxt}</div></div>${a._shared?'':`<div class="e-act"><button class="apedit" data-id="${a.id}" title="Bearbeiten">✎</button>${serBtn}<button class="apdel" data-id="${a.id}" title="Diesen Termin löschen">×</button></div>`}</div>`;
   }).join(""):'<div class="empty">Keine Einträge an diesem Tag.</div>';
   list.querySelectorAll(".apdel").forEach(b=>b.addEventListener("click",async()=>{appointments=appointments.filter(x=>x.id!==b.dataset.id);await save("appt:list",appointments);renderCalendar();renderHome();renderMonth();}));
   list.querySelectorAll(".apdelser").forEach(b=>b.addEventListener("click",async()=>{const sid=b.dataset.s;appointments=appointments.filter(x=>x.series!==sid);await save("appt:list",appointments);renderCalendar();renderHome();renderMonth();hint("Serie gelöscht",1500);}));
@@ -3761,6 +3915,7 @@ setInterval(checkWorkConfirm,2*60*1000);
 
 function renderHomeLanding(){
   tickHomeClock();renderVerse();loadWeather();renderDueCard();
+  try{renderWidgetFinance();}catch(e){}
   const now=new Date(),Y=now.getFullYear(),M=now.getMonth();
   const mw=monthWorkStats(Y,M);
   const monthExtra=extra.filter(e=>{const d=parseYmd(e.date);return d.getFullYear()===Y&&d.getMonth()===M;}).reduce((s,e)=>s+e.amount,0);
@@ -4250,6 +4405,218 @@ async function seedFromBrowserStore(){
 // setup moved into startApp
 
 /* ---------- AUTH SYSTEM ---------- */
+// ---- WIDGET-SYSTEM (Homepage) ----
+const WIDGET_DEFAULTS=["weather","due","today","finance","tasks","quickadd","verse"];
+const WIDGET_NAMES={weather:"Wetter",due:"Fällige Erinnerungen",today:"Heute (Kalender)",finance:"Finanzen",tasks:"Aufgaben",quickadd:"Schnell erfassen",verse:"Vers des Tages"};
+let widgetConfig=null; // {order:[...], hidden:[...]}
+
+function loadWidgetConfig(){
+  try{
+    var raw=window.authStore.get("widgetConfig")||localStorage.getItem("widgetConfig");
+    if(raw){widgetConfig=JSON.parse(raw);}
+  }catch(e){}
+  if(!widgetConfig||!widgetConfig.order){widgetConfig={order:WIDGET_DEFAULTS.slice(),hidden:[]};}
+  // Ensure new widgets appear even if config is old
+  WIDGET_DEFAULTS.forEach(function(w){
+    if(widgetConfig.order.indexOf(w)<0 && widgetConfig.hidden.indexOf(w)<0){widgetConfig.order.push(w);}
+  });
+}
+function saveWidgetConfig(){
+  try{window.authStore.set("widgetConfig",JSON.stringify(widgetConfig));}catch(e){}
+}
+function applyWidgetConfig(){
+  var container=$("widgetContainer");if(!container)return;
+  // Order + visibility
+  widgetConfig.order.forEach(function(name){
+    var el=container.querySelector('.widget[data-widget="'+name+'"]');
+    if(el){el.style.display=(widgetConfig.hidden.indexOf(name)>=0)?"none":"";container.appendChild(el);}
+  });
+  // Hidden tray
+  var tray=$("widgetHidden"),list=$("widgetHiddenList");
+  if(tray&&list){
+    if(document.body.classList.contains("widgets-editing")&&widgetConfig.hidden.length){
+      tray.style.display="";
+      list.innerHTML=widgetConfig.hidden.map(function(w){return '<span class="wht-chip" data-w="'+w+'">+ '+WIDGET_NAMES[w]+'</span>';}).join("");
+      list.querySelectorAll(".wht-chip").forEach(function(c){
+        c.addEventListener("click",function(){
+          var w=c.dataset.w;
+          widgetConfig.hidden=widgetConfig.hidden.filter(function(x){return x!==w;});
+          if(widgetConfig.order.indexOf(w)<0)widgetConfig.order.push(w);
+          saveWidgetConfig();applyWidgetConfig();
+        });
+      });
+    }else{tray.style.display="none";}
+  }
+}
+function moveWidget(name,dir){
+  var i=widgetConfig.order.indexOf(name);
+  if(i<0)return;
+  var j=i+dir;
+  if(j<0||j>=widgetConfig.order.length)return;
+  var tmp=widgetConfig.order[i];widgetConfig.order[i]=widgetConfig.order[j];widgetConfig.order[j]=tmp;
+  saveWidgetConfig();applyWidgetConfig();
+}
+function hideWidget(name){
+  if(widgetConfig.hidden.indexOf(name)<0)widgetConfig.hidden.push(name);
+  widgetConfig.order=widgetConfig.order.filter(function(x){return x!==name;});
+  saveWidgetConfig();applyWidgetConfig();
+}
+function setupWidgets(){
+  loadWidgetConfig();
+  applyWidgetConfig();
+  var editBtn=$("widgetEditBtn");
+  if(editBtn)editBtn.onclick=function(){
+    document.body.classList.toggle("widgets-editing");
+    editBtn.classList.toggle("active");
+    editBtn.textContent=document.body.classList.contains("widgets-editing")?"✓ Fertig":"⚙ Widgets anpassen";
+    applyWidgetConfig();
+  };
+  // Wire up per-widget controls
+  document.querySelectorAll("#widgetContainer .widget").forEach(function(w){
+    var name=w.dataset.widget;
+    var up=w.querySelector(".wc-up"),down=w.querySelector(".wc-down"),tog=w.querySelector(".wc-toggle");
+    if(up)up.onclick=function(){moveWidget(name,-1);};
+    if(down)down.onclick=function(){moveWidget(name,1);};
+    if(tog)tog.onclick=function(){hideWidget(name);};
+  });
+  // Quick-add
+  var qaExp=$("qaExpBtn"),qaTask=$("qaTaskBtn"),qaTitle=$("qaTitle");
+  if(qaExp)qaExp.onclick=async function(){
+    var v=(qaTitle.value||"").trim();if(!v){hint("Bitte etwas eingeben");return;}
+    // try to parse amount
+    var m=v.match(/([0-9]+([.,][0-9]{1,2})?)/);
+    var amount=m?parseFloat(m[1].replace(",",".")):0;
+    var desc=v.replace(/([0-9]+([.,][0-9]{1,2})?)/,"").trim()||"Ausgabe";
+    if(!amount){hint("Kein Betrag erkannt – z.B. „Migros 24.50“");return;}
+    dailyExp.push({id:Date.now()+"-"+Math.random().toString(36).slice(2,6),date:ymd(new Date()),amount:amount,desc:desc,cat:"Sonstiges",device:getDeviceLabel()});
+    await save("daily:list",dailyExp);
+    qaTitle.value="";
+    hint("✓ Ausgabe erfasst: "+desc+" CHF "+fmt(amount),2500);
+    try{renderDailyExpenses();renderHome();renderHomeLanding();}catch(e){}
+  };
+  if(qaTask)qaTask.onclick=async function(){
+    var v=(qaTitle.value||"").trim();if(!v){hint("Bitte etwas eingeben");return;}
+    todos.push({id:Date.now()+"-"+Math.random().toString(36).slice(2,6),title:v,done:false,due:"",subject:""});
+    await save("todos:list",todos);
+    qaTitle.value="";
+    hint("✓ Aufgabe hinzugefügt",2000);
+    try{renderTodos();renderHomeLanding();}catch(e){}
+  };
+  if(qaTitle)qaTitle.addEventListener("keydown",function(e){if(e.key==="Enter")$("qaTaskBtn").click();});
+}
+function renderWidgetFinance(){
+  var Y=new Date().getFullYear(),M=new Date().getMonth();
+  try{
+    var mw=monthWorkStats(Y,M);
+    var monthExtra=extra.filter(function(e){var d=parseYmd(e.date);return d.getFullYear()===Y&&d.getMonth()===M;}).reduce(function(s,e){return s+e.amount;},0);
+    var incomeAll=mw.inc+monthExtra;
+    var expTotal=expenses.filter(function(e){if(e.status!=="paid")return false;var d=parseYmd(e.date);return d.getFullYear()===Y&&d.getMonth()===M;}).reduce(function(s,e){return s+e.amount;},0)
+      +dailyExp.filter(function(e){var d=parseYmd(e.date);return d.getFullYear()===Y&&d.getMonth()===M;}).reduce(function(s,e){return s+e.amount;},0);
+    var bal=incomeAll-expTotal;
+    if($("wfinIncome"))$("wfinIncome").textContent="CHF "+fmt0(incomeAll);
+    if($("wfinExpense"))$("wfinExpense").textContent="CHF "+fmt0(expTotal);
+    if($("wfinBalance"))$("wfinBalance").textContent="CHF "+fmt0(bal);
+    if($("widgetFinMonth"))$("widgetFinMonth").textContent=MONTHS[M]+" "+Y;
+  }catch(e){}
+}
+
+// ---- KALENDER TEILEN ----
+let myShares=[]; // Liste von E-Mails mit denen ich teile
+
+function renderShareList(){
+  var box=$("shareList");if(!box)return;
+  if(!myShares.length){box.innerHTML='<div class="setNote">Noch niemand. Gib oben eine E-Mail ein, um deinen Kalender zu teilen.</div>';return;}
+  var html="";
+  myShares.forEach(function(email){
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;margin-bottom:6px">'
+      +'<span style="font-size:13px;color:var(--text);font-family:DM Mono,monospace;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(email)+'</span>'
+      +'<button class="shareRemove" data-email="'+escapeHtml(email)+'" style="flex:none;width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:none;color:var(--red);cursor:pointer;font-size:14px">×</button></div>';
+  });
+  box.innerHTML=html;
+  box.querySelectorAll(".shareRemove").forEach(function(b){
+    b.addEventListener("click",async function(){
+      var em=b.dataset.email;
+      myShares=myShares.filter(function(x){return x!==em;});
+      await saveShares();
+      renderShareList();
+    });
+  });
+}
+
+async function loadShares(){
+  var token=getCloudToken();if(!token||!CLOUD_API_BASE)return;
+  try{
+    var r=await fetch(CLOUD_API_BASE+"/api/shares",{headers:{"Authorization":"Bearer "+token}});
+    if(r.ok){var d=await r.json();myShares=d.shareWith||[];}
+  }catch(e){}
+  renderShareList();
+}
+
+async function saveShares(){
+  var token=getCloudToken();if(!token||!CLOUD_API_BASE)return;
+  try{
+    await fetch(CLOUD_API_BASE+"/api/shares",{
+      method:"POST",
+      headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
+      body:JSON.stringify({shareWith:myShares})
+    });
+  }catch(e){}
+}
+
+async function loadSharedCalendars(){
+  var token=getCloudToken();if(!token||!CLOUD_API_BASE)return;
+  try{
+    var r=await fetch(CLOUD_API_BASE+"/api/shared-calendars",{headers:{"Authorization":"Bearer "+token}});
+    if(r.ok){var d=await r.json();sharedCalendars=d.calendars||[];}
+  }catch(e){sharedCalendars=[];}
+  renderSharedWithMeList();
+  try{renderCalendar();renderHome();renderHomeLanding();}catch(e){}
+}
+
+function renderSharedWithMeList(){
+  var box=$("sharedWithMeList");if(!box)return;
+  if(!sharedCalendars.length){box.innerHTML='<div class="setNote">Noch keine Kalender mit dir geteilt.</div>';return;}
+  var html="";
+  sharedCalendars.forEach(function(cal){
+    var col=sharedColorFor(cal.owner);
+    html+='<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;margin-bottom:6px">'
+      +'<span style="flex:none;width:12px;height:12px;border-radius:50%;background:'+col+'"></span>'
+      +'<div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--text)">'+escapeHtml(cal.displayName)+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);font-family:DM Mono,monospace">'+cal.appointments.length+' Termine</div></div></div>';
+  });
+  box.innerHTML=html;
+}
+
+function setupSharing(){
+  var addBtn=$("shareAddBtn");
+  if(addBtn)addBtn.onclick=async function(){
+    var inp=$("shareEmailInput");
+    var err=$("shareErr");
+    var email=(inp.value||"").toLowerCase().trim();
+    err.textContent="";
+    if(!email){err.textContent="Bitte eine E-Mail eingeben";return;}
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){err.textContent="Ungültige E-Mail-Adresse";return;}
+    if(myShares.indexOf(email)>=0){err.textContent="Bereits freigegeben";return;}
+    myShares.push(email);
+    inp.value="";
+    await saveShares();
+    renderShareList();
+    hint("✓ Kalender freigegeben für "+email,2500);
+  };
+  var inp=$("shareEmailInput");
+  if(inp)inp.addEventListener("keydown",function(e){if(e.key==="Enter")$("shareAddBtn").click();});
+  var lsb=$("loadSharedBtn");
+  if(lsb)lsb.onclick=async function(){
+    var btn=this;btn.disabled=true;btn.textContent="Lädt …";
+    await loadSharedCalendars();
+    btn.disabled=false;btn.textContent="🔄 Aktualisieren";
+    hint("✓ Geteilte Kalender aktualisiert",2000);
+  };
+  // Initial laden
+  loadShares();
+  loadSharedCalendars();
+}
+
 // ---- CHANGELOG / UPDATE ----
 function renderChangelogBody(){
   var body=$("clBody");if(!body)return;
@@ -4416,6 +4783,8 @@ function setupChangelog(){
   renderTodoTplBar();
   setInterval(cloudPull,5*60*1000);
   setupChangelog();
+  setupSharing();
+  setupWidgets();
 
   // Initial cloud sync: push local data to cloud so badge confirms sync
   if(getCloudToken() && CLOUD_API_BASE){
