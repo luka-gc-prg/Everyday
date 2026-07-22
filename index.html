@@ -300,7 +300,26 @@ label{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
 .chip{padding:7px 14px;border-radius:16px;border:.5px solid var(--line);background:var(--card);color:var(--mut);font-size:12px;cursor:pointer;font-family:"DM Sans",sans-serif}
 .chip.on{border-color:var(--acc);color:var(--acc);background:var(--acc-bg)}
-/* Untere Navigation */
+/* Kalender */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.cal-nav button{width:34px;height:34px;border-radius:11px;border:.5px solid var(--line);background:var(--card2);color:var(--acc);font-size:17px;cursor:pointer}
+.cal-nav button:active{transform:scale(.94)}
+.cal-label{font-family:"Bebas Neue",sans-serif;font-size:19px;letter-spacing:.04em}
+.cal-week{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px}
+.cal-week span{text-align:center;font-family:"DM Mono",monospace;font-size:9.5px;letter-spacing:.04em;color:var(--mut2);text-transform:uppercase;padding:4px 0}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-day{aspect-ratio:1;border:none;background:transparent;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;font-family:"DM Sans",sans-serif;font-size:13px;color:var(--text2);transition:.12s}
+.cal-day.pad{color:var(--mut2);opacity:.35}
+.cal-day.today{background:var(--acc-bg);color:var(--acc);font-weight:600}
+.cal-day.sel{outline:1.5px solid var(--acc);outline-offset:-1.5px}
+.cal-day:active{transform:scale(.92)}
+.cal-dots{display:flex;gap:2.5px;height:4px;align-items:center}
+.cal-dots i{width:4px;height:4px;border-radius:50%;display:block}
+.cal-legend{display:flex;gap:14px;justify-content:center;margin-top:14px;padding-top:12px;border-top:.5px solid var(--line)}
+.cal-legend span{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--mut)}
+.cal-legend i{width:6px;height:6px;border-radius:50%;display:block}
+#calDay:not(:empty){margin-top:12px;padding-top:12px;border-top:.5px solid var(--line)}
+.cal-day-title{font-family:"DM Mono",monospace;font-size:11px;letter-spacing:.06em;color:var(--mut);text-transform:uppercase;margin-bottom:8px}
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:100;background:rgba(22,24,29,.92);backdrop-filter:blur(14px);border-top:.5px solid var(--line);display:flex;justify-content:space-around;padding:8px 6px calc(env(safe-area-inset-bottom,0px) + 8px)}
 .tab{flex:1;max-width:96px;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;font-family:"DM Sans",sans-serif;color:var(--mut2);border-radius:12px;transition:.15s}
 .tab .t-ico{display:grid;place-items:center;line-height:1}
@@ -367,6 +386,25 @@ label{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase
 
     <div class="sec-title">Heute</div>
     <div class="card" id="todayCard"><div class="empty">Nichts geplant — geniess den Tag</div></div>
+
+    <div class="sec-title">Kalender</div>
+    <div class="card">
+      <div class="cal-nav">
+        <button id="cPrev">‹</button>
+        <span class="cal-label" id="cLabel">—</span>
+        <button id="cNext">›</button>
+      </div>
+      <div class="cal-week">
+        <span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-legend">
+        <span><i style="background:#b08ad6"></i>Arbeit</span>
+        <span><i style="background:#7aa6d6"></i>Aufgabe</span>
+        <span><i style="background:#e08f7c"></i>Rechnung</span>
+      </div>
+      <div id="calDay"></div>
+    </div>
   </section>
 
   <!-- ===== AUFGABEN ===== -->
@@ -653,6 +691,7 @@ function renderHome(){
   $("todayCard").innerHTML=items.length
     ?items.map(i=>'<div class="today-item"><span class="dot" style="background:'+i.c+'"></span><span style="flex:1;font-size:14px">'+esc(i.t)+'</span><span style="font-family:DM Mono,monospace;font-size:11px;color:var(--mut)">'+esc(i.r)+'</span></div>').join("")
     :'<div class="empty">Nichts geplant — geniess den Tag</div>';
+  renderCal();
 }
 
 /* ================= AUFGABEN ================= */
@@ -736,6 +775,73 @@ $("sAdd").onclick=()=>{
 };
 $("mPrev").onclick=()=>{viewYM.m--;if(viewYM.m<0){viewYM.m=11;viewYM.y--;}renderArbeit();};
 $("mNext").onclick=()=>{viewYM.m++;if(viewYM.m>11){viewYM.m=0;viewYM.y++;}renderArbeit();};
+
+/* ================= KALENDER ================= */
+let calYM={y:new Date().getFullYear(),m:new Date().getMonth()};
+let calSel=null;
+
+function calEntries(dateStr){
+  const out=[];
+  shifts().filter(s=>s.date===dateStr).forEach(s=>{
+    out.push({c:"#b08ad6",t:"Arbeit "+s.start+"–"+s.end,r:fmtH(shiftMinutes(s))});
+  });
+  todos.filter(t=>!t.done&&t.due===dateStr).forEach(t=>{
+    out.push({c:"#7aa6d6",t:t.title,r:t.subject||"Aufgabe"});
+  });
+  bills.filter(b=>b.status!=="paid"&&b.date===dateStr).forEach(b=>{
+    out.push({c:"#e08f7c",t:b.title,r:"CHF "+fmt(+b.amount||0)});
+  });
+  return out;
+}
+
+function renderCal(){
+  const y=calYM.y,m=calYM.m;
+  $("cLabel").textContent=MONTHS[m]+" "+y;
+  const first=new Date(y,m,1);
+  const startPad=(first.getDay()+6)%7;          // Montag = 0
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  const daysPrev=new Date(y,m,0).getDate();
+  const today=ymd(new Date());
+  let html="";
+  // Tage aus dem Vormonat
+  for(let i=startPad-1;i>=0;i--){
+    html+='<button class="cal-day pad" disabled>'+(daysPrev-i)+'</button>';
+  }
+  // Tage des Monats
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+    const ev=calEntries(ds);
+    const cols=[...new Set(ev.map(e=>e.c))].slice(0,3);
+    const dots=cols.length?'<span class="cal-dots">'+cols.map(c=>'<i style="background:'+c+'"></i>').join("")+'</span>':'<span class="cal-dots"></span>';
+    const cls="cal-day"+(ds===today?" today":"")+(ds===calSel?" sel":"");
+    html+='<button class="'+cls+'" data-d="'+ds+'"><span>'+d+'</span>'+dots+'</button>';
+  }
+  // Tage aus dem Folgemonat auffüllen
+  const rest=(7-((startPad+daysInMonth)%7))%7;
+  for(let i=1;i<=rest;i++){
+    html+='<button class="cal-day pad" disabled>'+i+'</button>';
+  }
+  $("calGrid").innerHTML=html;
+  $("calGrid").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{
+    calSel=(calSel===b.dataset.d)?null:b.dataset.d;
+    renderCal();
+  });
+  renderCalDay();
+}
+
+function renderCalDay(){
+  const box=$("calDay");
+  if(!calSel){box.innerHTML="";return;}
+  const d=parseYmd(calSel);
+  const ev=calEntries(calSel);
+  const head='<div class="cal-day-title">'+DAYS[(d.getDay()+6)%7]+", "+d.getDate()+". "+MONTHS[d.getMonth()]+'</div>';
+  box.innerHTML=head+(ev.length
+    ?ev.map(e=>'<div class="today-item"><span class="dot" style="background:'+e.c+'"></span><span style="flex:1;font-size:14px">'+esc(e.t)+'</span><span style="font-family:DM Mono,monospace;font-size:11px;color:var(--mut)">'+esc(e.r)+'</span></div>').join("")
+    :'<div class="empty" style="padding:8px">Nichts an diesem Tag.</div>');
+}
+
+$("cPrev").onclick=()=>{calYM.m--;if(calYM.m<0){calYM.m=11;calYM.y--;}calSel=null;renderCal();};
+$("cNext").onclick=()=>{calYM.m++;if(calYM.m>11){calYM.m=0;calYM.y++;}calSel=null;renderCal();};
 
 /* ================= FINANZEN ================= */
 const BUDGET_COLORS=["#7aa6d6","#8fb996","#d99b6a","#b08ad6","#e08f9b","#5fb8a8","#c8a96e","#7fa86b","#7c8290"];
