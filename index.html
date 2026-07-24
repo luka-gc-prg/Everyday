@@ -495,7 +495,7 @@ label{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase
       </div>
       <div class="fin-split">
         <div class="fin-cell"><span>Ausbezahlt</span><b id="finInc" style="color:var(--green)">CHF 0</b></div>
-        <div class="fin-cell"><span>Rechnungen offen · gesamt</span><b id="finBills" style="color:var(--red)">CHF 0</b></div>
+        <div class="fin-cell"><span>Rechnungen</span><b id="finBills" style="color:var(--red)">CHF 0</b></div>
       </div>
       <div class="fin-split" style="margin-top:10px">
         <div class="fin-cell"><span>Eingeplant</span><b id="finPlanned" style="color:var(--blue)">CHF 0</b></div>
@@ -712,8 +712,9 @@ function renderHome(){
   const pay=monthPayout(y,m);
   const extraSum=monthExtra(y,m).reduce((s,e)=>s+(+e.amount||0),0);
   const billsOpen=bills.filter(b=>b.status!=="paid").reduce((s,b)=>s+(+b.amount||0),0);
+  const billsPaid=billsPaidIn(y,m).reduce((s,b)=>s+(+b.amount||0),0);
   const planned=budgets.reduce((s,b)=>s+(+b.amount||0),0);
-  $("hubSaldo").textContent="CHF "+fmt0(pay.total+extraSum-billsOpen-planned);
+  $("hubSaldo").textContent="CHF "+fmt0(pay.total+extraSum-billsOpen-billsPaid-planned);
   const open=todos.filter(t=>!t.done).length;
   $("hubTasks").textContent=open+" offen";
   $("hubHours").textContent=fmtH(monthStats(y,m).min);
@@ -900,6 +901,16 @@ $("cNext").onclick=()=>{calYM.m++;if(calYM.m>11){calYM.m=0;calYM.y++;}calSel=nul
 const BUDGET_COLORS=["#7aa6d6","#8fb996","#d99b6a","#b08ad6","#e08f9b","#5fb8a8","#c8a96e","#7fa86b","#7c8290"];
 function budgetColor(i){return BUDGET_COLORS[i%BUDGET_COLORS.length];}
 
+function billsPaidIn(y,m){
+  return bills.filter(b=>{
+    if(b.status!=="paid")return false;
+    const ds=b.paidDate||b.date;      // ältere Einträge: Fälligkeit als Näherung
+    if(!ds)return false;
+    const d=parseYmd(ds);
+    return d.getFullYear()===y&&d.getMonth()===m;
+  });
+}
+
 let finYM={y:new Date().getFullYear(),m:new Date().getMonth()};
 
 function renderFinanzen(){
@@ -909,15 +920,19 @@ function renderFinanzen(){
   const extraSum=monthExtra(y,m).reduce((s,e)=>s+(+e.amount||0),0);
   const income=pay.total+extraSum;
   const billsOpen=bills.filter(b=>b.status!=="paid").reduce((s,b)=>s+(+b.amount||0),0);
+  const billsPaid=billsPaidIn(y,m).reduce((s,b)=>s+(+b.amount||0),0);
+  const billsTotal=billsOpen+billsPaid;
   const planned=budgets.reduce((s,b)=>s+(+b.amount||0),0);
   const saved=budgets.filter(b=>b.save).reduce((s,b)=>s+(+b.amount||0),0);
-  $("finFree").textContent="CHF "+fmt0(income-billsOpen-planned);
+  $("finFree").textContent="CHF "+fmt0(income-billsTotal-planned);
   $("finMonthLabel").textContent="frei verfügbar · "+MONTHS[m]+" "+y;
   $("finInc").textContent="CHF "+fmt0(income);
-  $("finBills").textContent="CHF "+fmt0(billsOpen);
+  $("finBills").textContent="CHF "+fmt0(billsTotal);
   $("finPlanned").textContent="CHF "+fmt0(planned);
   $("finSaved").textContent="CHF "+fmt0(saved);
-  $("finIncDetail").textContent="Lohn am 10. (aus "+pay.prevLabel+"): CHF "+fmt0(pay.on10)+"  ·  am 25.: CHF "+fmt0(pay.on25)+(extraSum?"  ·  Zusatz: CHF "+fmt0(extraSum):"");
+  $("finIncDetail").innerHTML=
+    "Lohn am 10. (aus "+pay.prevLabel+"): CHF "+fmt0(pay.on10)+"  ·  am 25.: CHF "+fmt0(pay.on25)+(extraSum?"  ·  Zusatz: CHF "+fmt0(extraSum):"")
+    +"<br>Rechnungen: bezahlt CHF "+fmt0(billsPaid)+"  ·  noch offen CHF "+fmt0(billsOpen);
   renderBudgets(income);
   renderBills();
   renderExtra();
@@ -982,14 +997,17 @@ function renderBills(){
     const rows=g.items.map(b=>{
       const paid=b.status==="paid";
       const over=!paid&&b.date&&parseYmd(b.date)<t0;
-      const meta=paid?"bezahlt":(b.date?(over?'<span class="overdue">überfällig · '+ddmm(parseYmd(b.date))+'</span>':"fällig "+ddmm(parseYmd(b.date))+parseYmd(b.date).getFullYear()):"ohne Frist");
+      const meta=paid
+        ?("bezahlt"+(b.paidDate?" am "+ddmm(parseYmd(b.paidDate))+parseYmd(b.paidDate).getFullYear():""))
+        :(b.date?(over?'<span class="overdue">überfällig · '+ddmm(parseYmd(b.date))+'</span>':"fällig "+ddmm(parseYmd(b.date))+parseYmd(b.date).getFullYear()):"ohne Frist");
       return '<div class="item'+(paid?' task-done':'')+'"><button class="chk'+(paid?' done':'')+'" data-btgl="'+b.id+'">✓</button><div class="item-main"><div class="item-title">'+esc(b.title)+'</div><div class="item-meta">'+meta+'</div></div><span class="item-amt">CHF '+fmt(+b.amount||0)+'</span><button class="ibtn del" data-rdel="'+b.id+'">×</button></div>';
     }).join("");
     return '<div class="mgroup"><div class="mgroup-head"><span>'+esc(g.label)+'</span><span>CHF '+fmt0(sum)+'</span></div>'+rows+'</div>';
   }).join("");
   box.querySelectorAll("[data-btgl]").forEach(btn=>btn.onclick=()=>{
     const b=bills.find(x=>x.id===btn.dataset.btgl);if(!b)return;
-    b.status=b.status==="paid"?"open":"paid";
+    if(b.status==="paid"){b.status="open";delete b.paidDate;}
+    else{b.status="paid";b.paidDate=ymd(new Date());}
     saveKey("expenses:list",bills);renderFinanzen();renderHome();
   });
   box.querySelectorAll("[data-rdel]").forEach(btn=>btn.onclick=()=>{
